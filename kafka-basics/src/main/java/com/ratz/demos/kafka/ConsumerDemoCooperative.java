@@ -1,10 +1,7 @@
 package com.ratz.demos.kafka;
 
 
-import org.apache.kafka.clients.consumer.ConsumerConfig;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.consumer.ConsumerRecords;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.clients.consumer.*;
 import org.apache.kafka.common.errors.WakeupException;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.slf4j.Logger;
@@ -15,9 +12,9 @@ import java.util.Arrays;
 import java.util.Properties;
 
 
-public class ConsumerDemoWithShutdown {
+public class ConsumerDemoCooperative {
 
-  private static final Logger logger = LoggerFactory.getLogger(ConsumerDemoWithShutdown.class.getSimpleName());
+  private static final Logger logger = LoggerFactory.getLogger(ConsumerDemoCooperative.class.getSimpleName());
 
   public static void main(String[] args) {
 
@@ -35,6 +32,7 @@ public class ConsumerDemoWithShutdown {
     properties.setProperty(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
     properties.setProperty(ConsumerConfig.GROUP_ID_CONFIG, groupId);
     properties.setProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+    properties.setProperty(ConsumerConfig.PARTITION_ASSIGNMENT_STRATEGY_CONFIG, CooperativeStickyAssignor.class.getName());
 
 
     // create consumer
