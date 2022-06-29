@@ -1,5 +1,6 @@
 package com.ratz.kafka.opensearch;
 
+import com.google.gson.JsonParser;
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
@@ -85,6 +86,19 @@ public class OpenSearchConsumer {
     return new KafkaConsumer<>(properties);
   }
 
+  private static String extractId(String value) {
+
+    //gson library
+    return JsonParser.parseString(value)
+        .getAsJsonObject()
+        .get("meta")
+        .getAsJsonObject()
+        .get("id")
+        .getAsString();
+  }
+
+
+
 
   public static void main(String[] args) throws IOException {
 
@@ -130,10 +144,19 @@ public class OpenSearchConsumer {
 
         for (ConsumerRecord<String,String> record : records){
 
+          //make idempotent
+          //strategy 1
+          //define an id using kafka record coordinates
+          //String id = record.topic() + "_" + record.partition() + "_" + record.offset();
+
           try{
 
+            //strategy 2
+            //we extract the ID from the JSON value
+            String id = extractId(record.value());
+
             //Send the record in the open search
-            IndexRequest indexRequest = new IndexRequest("wikimedia").source(record.value(), XContentType.JSON);
+            IndexRequest indexRequest = new IndexRequest("wikimedia").source(record.value(), XContentType.JSON).id(id);
             IndexResponse response = openSearchClient.index(indexRequest, RequestOptions.DEFAULT);
             log.info("Inserted one document into OpenSearch with the ID: {}", response.getId());
           } catch (Exception e) {
@@ -147,4 +170,6 @@ public class OpenSearchConsumer {
     //close things
 
   }
+
+
 }
