@@ -25,6 +25,18 @@ public class WikimediaChangesProducer {
     properties.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
 
 
+    // set safe producer configs (Kafka <= 2.8) NOW ITS ALL DEFAULT
+    properties.setProperty(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, "true");
+    properties.setProperty(ProducerConfig.ACKS_CONFIG, "all"); // same as setting -1
+    properties.setProperty(ProducerConfig.RETRIES_CONFIG, Integer.toString(Integer.MAX_VALUE)); // same as setting -1
+
+
+    // set high throughput producer configs
+    properties.setProperty(ProducerConfig.LINGER_MS_CONFIG, "20"); // added a small delay of 20ms
+    properties.setProperty(ProducerConfig.BATCH_SIZE_CONFIG, Integer.toString(32 * 1024)); // we increased the batch size to 32kb
+    properties.setProperty(ProducerConfig.COMPRESSION_TYPE_CONFIG, "snappy"); //type of compression
+
+
     // create the Producer
     KafkaProducer<String, String> producer = new KafkaProducer<>(properties);
 
