@@ -12,6 +12,8 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.serialization.StringDeserializer;
+import org.opensearch.action.bulk.BulkRequest;
+import org.opensearch.action.bulk.BulkResponse;
 import org.opensearch.action.index.IndexRequest;
 import org.opensearch.action.index.IndexResponse;
 import org.opensearch.client.RequestOptions;
@@ -142,6 +144,8 @@ public class OpenSearchConsumer {
 
         log.info("Received, {} records!", recordCount);
 
+        BulkRequest bulkRequest = new BulkRequest();
+
         for (ConsumerRecord<String,String> record : records){
 
           //make idempotent
@@ -157,16 +161,33 @@ public class OpenSearchConsumer {
 
             //Send the record in the open search
             IndexRequest indexRequest = new IndexRequest("wikimedia").source(record.value(), XContentType.JSON).id(id);
-            IndexResponse response = openSearchClient.index(indexRequest, RequestOptions.DEFAULT);
-            log.info("Inserted one document into OpenSearch with the ID: {}", response.getId());
+
+            bulkRequest.add(indexRequest);
+            //IndexResponse response = openSearchClient.index(indexRequest, RequestOptions.DEFAULT);
+            //log.info("Inserted one document into OpenSearch with the ID: {}", response.getId());
           } catch (Exception e) {
             log.error(e.getMessage());
           }
         }
 
-        //commit offsets after batch is consumed
-        consumer.commitSync();
-        log.info("Offsets have been committed!");
+        if(bulkRequest.numberOfActions() > 0) {
+
+          BulkResponse bulkResponse = openSearchClient.bulk(bulkRequest, RequestOptions.DEFAULT);
+          log.info("Inserted {} records as an bulk", bulkResponse.getItems().length);
+
+          try {
+            Thread.sleep(1000);
+
+          } catch (Exception e){
+
+          }
+
+          //commit offsets after batch is consumed
+          consumer.commitSync();
+          log.info("Offsets have been committed!");
+        }
+
+
       }
     }
 
